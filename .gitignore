@@ -1,0 +1,7 @@
+.gradle/
+.idea/
+average-calculator.iml
+average-calculator.ipr
+average-calculator.iws
+build/
+
