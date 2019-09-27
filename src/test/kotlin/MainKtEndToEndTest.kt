@@ -59,20 +59,7 @@ object MainKtEndToEndTest {
         )
 
         // THEN
-        assertThat(result, hasStatus(OK))
+        assertThat(result, hasStatus(OK).and(hasBody("2.5")))
     }
 
-    private fun makeServer(): Http4kServer {
-        val app = averageCalculatorHandler()
-        val server = app.asServer(Jetty(9001))
-        return server
-    }
-
-    fun averageCalculatorHandler(): HttpHandler = ServerFilters.CatchLensFailure.then(
-        routes(
-            "/ping" bind GET to { _: Request -> Response(OK) },
-            "/say-hello" bind GET to { request: Request -> Response(OK).body("Hello, ${request.query("name")}!") },
-            "/calculate-mean" bind POST to { request: Request -> Response(OK) }
-        )
-    )
 }
