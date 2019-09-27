@@ -1,18 +1,13 @@
 import com.natpryce.hamkrest.and
 import com.natpryce.hamkrest.assertion.assertThat
 import org.http4k.client.ApacheClient
-import org.http4k.core.*
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
+import org.http4k.core.Request
+import org.http4k.core.Response
 import org.http4k.core.Status.Companion.OK
-import org.http4k.filter.ServerFilters
 import org.http4k.hamkrest.hasBody
 import org.http4k.hamkrest.hasStatus
-import org.http4k.routing.bind
-import org.http4k.routing.routes
-import org.http4k.server.Http4kServer
-import org.http4k.server.Jetty
-import org.http4k.server.asServer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -46,20 +41,19 @@ object MainKtEndToEndTest {
 
     @Test
     internal fun `calculates mean`() {
-        // WHEN
-        val result = client(
-            Request(POST, "http://localhost:9001/calculate-mean")
-                .body(
-                    """"
-                    {
-                       "numbers": [1, 2, 3, 4]
-                    }
-                    """.trimMargin()
-                )
-        )
+        val averageRequest: String = AverageRequest(numbers = listOf(1.0, 2.0, 3.0, 4.0)).toJsonString()
+        assertThat(client( Request(POST, "http://localhost:9001/calculate-mean").body(averageRequest)), hasStatus(OK).and(hasBody("2.5")))
+    }
+}
 
-        // THEN
-        assertThat(result, hasStatus(OK).and(hasBody("2.5")))
+object AverageCalculatorTest {
+    @Test
+    internal fun `average of single number is that number`() {
+        app(Request(POST, "/calculate-mean").body(AverageRequest(listOf(1.0)).toJsonString()
+        )).answerShouldBe("1.0")
     }
 
+    fun Response.answerShouldBe(expected: String) {
+        assertThat(this, hasStatus(OK).and(hasBody(expected)))
+    }
 }
