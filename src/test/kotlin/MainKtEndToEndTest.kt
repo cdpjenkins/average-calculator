@@ -8,6 +8,7 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.Status.Companion.BAD_REQUEST
 import org.http4k.core.Status.Companion.OK
+import org.http4k.format.Jackson.asJsonObject
 import org.http4k.hamkrest.hasBody
 import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
@@ -61,6 +62,12 @@ object AverageCalculatorTest {
     }
 
     @Test
+    internal fun `mode of an empty list results in an error`() {
+        whenIAskForTheModeOf()
+            .thenTheResponseHasStatus(BAD_REQUEST);
+    }
+
+    @Test
     internal fun `mode of single number is that number`() {
         whenIAskForTheModeOf(1.0)
             .thenTheResultIs("1.0")
@@ -91,6 +98,6 @@ object AverageCalculatorTest {
 
     private fun whenIAskForTheModeOf(vararg numbers: Double) =
         app(Request(POST, "/calculate-mode").body(AverageRequest(numbers.toList()).toJsonString()))
-
 }
 
+private fun Any.toJsonString() = this.asJsonObject().toString()

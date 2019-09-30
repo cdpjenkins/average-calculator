@@ -2,16 +2,12 @@ import org.http4k.core.*
 import org.http4k.core.Status.Companion.BAD_REQUEST
 import org.http4k.core.Status.Companion.OK
 import org.http4k.filter.ServerFilters
-import org.http4k.format.Jackson.asJsonObject
 import org.http4k.format.Jackson.auto
 import org.http4k.routing.bind
 import org.http4k.routing.routes
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.asServer
-
-import kotlin.collections.eachCount
-
 
 val app = averageCalculatorHandler()
 
@@ -29,34 +25,48 @@ fun averageCalculatorHandler(): HttpHandler = ServerFilters.CatchLensFailure.the
     routes(
         "/ping" bind Method.GET to { Response(OK) },
         "/say-hello" bind Method.GET to { request: Request -> Response(OK).body("Hello, ${request.query("name")}!") },
-        "/calculate-mean" bind Method.POST to ::calculateMean,
-        "/calculate-mode" bind Method.POST to ::calculateMode
+        "/calculate-mean" bind Method.POST to MeanCalculator::handleRequest,
+        "/calculate-mode" bind Method.POST to ModeCalculator::handleRequest
     )
 )
 
 data class AverageRequest(val numbers: List<Double>)
 
-fun Any.toJsonString() = this.asJsonObject().toString()
+abstract class AverageCalculator {
+    val averageRequestLens = Body.auto<AverageRequest>().toLens()
 
-val averageRequestLense = Body.auto<AverageRequest>().toLens()
+    internal abstract fun calculateAverage(averageRequest: AverageRequest): Double
 
-private fun calculateMean(request: Request): Response {
-    val averageRequest: AverageRequest = averageRequestLense(request)
-
-    if (averageRequest.numbers.isEmpty()) {
-        return Response(BAD_REQUEST);
+    fun handleRequest(request: Request): Response {
+        try {
+            val averageRequest: AverageRequest = parseAndValidate(request)
+            val result = calculateAverage(averageRequest)
+            return Response(OK).body(result.toString())
+        } catch (e: java.lang.IllegalArgumentException) {
+            return Response(BAD_REQUEST);
+        }
     }
 
-    val mean: Double = averageRequest.numbers
-        .reduceRight { l, r -> l + r } / averageRequest.numbers.size
+    fun parseAndValidate(request: Request): AverageRequest {
+        val averageRequest: AverageRequest = averageRequestLens(request)
 
-    return Response(OK).body(mean.toString())
+        if (averageRequest.numbers.isEmpty()) {
+            throw IllegalArgumentException("Missing parameter: numbers")
+        }
+        return averageRequest
+    }
 }
 
-fun calculateMode(request: Request): Response {
-    val averageRequest: AverageRequest = averageRequestLense(request)
+object MeanCalculator : AverageCalculator() {
+    override fun calculateAverage(averageRequest: AverageRequest): Double {
+        val mean: Double = averageRequest.numbers.reduceRight { l, r -> l + r } / averageRequest.numbers.size
+        return mean
+    }
+}
 
-    val count: Map<Double, Int> = averageRequest.numbers.groupingBy{it}.eachCount()
-
-    return Response(OK).body(count.entries.maxBy { it.value }?.key.toString())
+object ModeCalculator : AverageCalculator() {
+    override fun calculateAverage(averageRequest: AverageRequest): Double {
+        val mode = averageRequest.numbers.groupingBy { it }.eachCount().entries.maxBy { it.value }?.key ?: -1.0
+        return mode
+    }
 }
