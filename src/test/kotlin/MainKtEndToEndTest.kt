@@ -5,12 +5,13 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Response
+import org.http4k.core.Status
+import org.http4k.core.Status.Companion.BAD_REQUEST
 import org.http4k.core.Status.Companion.OK
 import org.http4k.hamkrest.hasBody
 import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-
 
 object MainKtEndToEndTest {
     val server = makeServer()
@@ -48,12 +49,48 @@ object MainKtEndToEndTest {
 
 object AverageCalculatorTest {
     @Test
-    internal fun `average of single number is that number`() {
-        app(Request(POST, "/calculate-mean").body(AverageRequest(listOf(1.0)).toJsonString()
-        )).answerShouldBe("1.0")
+    internal fun `mean of single number is that number`() {
+        whenIAskForTheMeanOf(1.0)
+            .thenTheResultIs("1.0")
     }
 
-    fun Response.answerShouldBe(expected: String) {
+    @Test
+    internal fun `mean of an empty list results in an error`() {
+        whenIAskForTheMeanOf()
+            .thenTheResponseHasStatus(BAD_REQUEST);
+    }
+
+    @Test
+    internal fun `mode of single number is that number`() {
+        whenIAskForTheModeOf(1.0)
+            .thenTheResultIs("1.0")
+    }
+
+    @Test
+    internal fun `mode of two numbers is the first of those numbers`() {
+        whenIAskForTheModeOf(2.0, 1.0)
+            .thenTheResultIs("2.0")
+    }
+
+    @Test
+    internal fun `mode of three numbers where one is repeated`() {
+        whenIAskForTheModeOf(5.0, 6.0, 6.0)
+            .thenTheResultIs("6.0")
+    }
+
+    fun Response.thenTheResultIs(expected: String) {
         assertThat(this, hasStatus(OK).and(hasBody(expected)))
     }
+
+    fun Response.thenTheResponseHasStatus(status: Status) {
+        assertThat(this, hasStatus(status))
+    }
+
+    private fun whenIAskForTheMeanOf(vararg numbers: Double) =
+        app(Request(POST, "/calculate-mean").body(AverageRequest(numbers.toList()).toJsonString()))
+
+    private fun whenIAskForTheModeOf(vararg numbers: Double) =
+        app(Request(POST, "/calculate-mode").body(AverageRequest(numbers.toList()).toJsonString()))
+
 }
+
