@@ -6,6 +6,7 @@ plugins {
 group 'chris'
 version '1.0-SNAPSHOT'
 
+
 repositories {
     mavenCentral()
     jcenter()
@@ -15,22 +16,22 @@ repositories {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 
-    compile group: "org.http4k", name: "http4k-core", version: "3.185.0"
-    compile group: "org.http4k", name: "http4k-server-jetty", version: "3.185.0"
-    compile group: "org.http4k", name: "http4k-client-apache", version: "3.185.0"
-    compile group: "org.http4k", name: "http4k-format-jackson", version: "3.185.0"
+    def http4kVersion = "3.254.0"
+
+    compile group: "org.http4k", name: "http4k-core", version: http4kVersion
+    compile group: "org.http4k", name: "http4k-server-jetty", version: http4kVersion
+    compile group: "org.http4k", name: "http4k-client-apache", version: http4kVersion
+    compile group: "org.http4k", name: "http4k-format-jackson", version: http4kVersion
+    compile group: "org.http4k", name: "http4k-metrics-micrometer", version: http4kVersion
+    // urgh heo to make this match the http4k version without adding another library to glue them together
+    compile 'io.micrometer:micrometer-registry-prometheus:1.5.2'
 
 
     testCompile(
-//            "org.hamcrest:hamcrest-all:1.3",
-//            "org.jetbrains.kotlin:kotlin-test-junit:1.3.50",
             'org.junit.jupiter:junit-jupiter-api:5.2.0',
             'org.junit.jupiter:junit-jupiter-engine:5.1.0',
-            'com.natpryce:hamkrest:1.4.2.2',
+            'com.natpryce:hamkrest:1.7.0.3',
             "org.http4k:http4k-testing-hamkrest:3.185.0"
-
-
-
     )
 }
 

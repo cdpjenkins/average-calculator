@@ -1,4 +1,4 @@
-import com.natpryce.hamkrest.and
+import com.natpryce.hamkrest.*
 import com.natpryce.hamkrest.assertion.assertThat
 import org.http4k.client.ApacheClient
 import org.http4k.core.Method.GET
@@ -45,6 +45,13 @@ object MainKtEndToEndTest {
     internal fun `calculates mean`() {
         val averageRequest: String = AverageRequest(numbers = listOf(1.0, 2.0, 3.0, 4.0)).toJsonString()
         assertThat(client( Request(POST, "http://localhost:9001/calculate-mean").body(averageRequest)), hasStatus(OK).and(hasBody("2.5")))
+    }
+
+    @Test
+    internal fun `Prometheus metrics are returned and the response is non-empty`() {
+        assertThat(
+            client(Request(GET, "http://localhost:9001/metrics")),
+            hasStatus(OK).and(hasBody(!isNullOrEmptyString)))
     }
 }
 
