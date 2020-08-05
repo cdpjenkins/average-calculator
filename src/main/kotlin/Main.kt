@@ -9,6 +9,7 @@ import org.http4k.filter.MetricFilters
 import org.http4k.filter.ServerFilters
 import org.http4k.format.Jackson.auto
 import org.http4k.routing.bind
+import org.http4k.routing.path
 import org.http4k.routing.routes
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
@@ -18,6 +19,7 @@ import java.util.*
 
 val app = averageCalculatorHandler()
 var micrometerMetricsegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+var delay: Int = 0
 
 fun main() {
     val server = makeServer()
@@ -42,6 +44,10 @@ fun averageCalculatorHandler(): HttpHandler = ServerFilters.CatchLensFailure.the
             randomSleep()
             Response(OK)
         },
+        "/setDelay/{delay}" bind GET to {
+            delay = it.path("delay")?.toInt() ?: 0
+            Response(OK)
+        },
         "/say-hello" bind GET to { request: Request -> Response(OK).body("Hello, ${request.query("name")}!") },
         "/calculate-mean" bind POST to MeanCalculator::handleRequest,
         "/calculate-mode" bind POST to ModeCalculator::handleRequest,
@@ -50,7 +56,8 @@ fun averageCalculatorHandler(): HttpHandler = ServerFilters.CatchLensFailure.the
 )
 
 private fun randomSleep() {
-    val positiveDelay = abs(Random().nextGaussian() * 500)
+    val positiveDelay = abs(Random().nextGaussian() * 500 + delay)
+    println("Sleeping for ${positiveDelay} ms")
     Thread.sleep(positiveDelay.toLong())
 }
 
